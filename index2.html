@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QXDM_CSI_to_Wireshark_FAPI_Converter</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+textarea { width: 100%; height: 300px; margin-bottom: 10px; font-family: monospace; }
+button { padding: 10px 20px; font-size: 16px; }
+pre { background: #fff; padding: 10px; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<h1>QXDM_CSI_to_Wireshark_FAPI_Converter</h1>
+<p style="margin: 0;">Author: Dustin_Chen, email: <a href="mailto:Dustin_Chen@compal.com" style="line-height: 1;">Dustin_Chen@compal.com</a> or <a href="mailto:chuhpsdustin@gmail.com" style="line-height: 1;">chuhpsdustin@gmail.com</a></p>	
+<br>
+<textarea id="inputText" placeholder="Paste QXDM NR5G MAC CSF Report here..."></textarea>
+<button onclick="convertToWireshark()">Convert</button>
+<pre id="output"></pre>
+
+<script>
+function convertToWireshark() {
+    const text = document.getElementById('inputText').value;
+
+    // 解析 Bit Width
+    const bitWidth = {};
+    const bitWidthMatch = text.match(/Bit Width\s*{([\s\S]*?)}/);
+    if(bitWidthMatch){
+        const lines = bitWidthMatch[1].split('\n');
+        lines.forEach(line => {
+            const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
+            if(m) bitWidth[m[1].trim()] = parseInt(m[2]);
+        });
+    }
+
+    // 解析 Metrics
+    const metrics = {};
+    const metricsMatch = text.match(/Metrics\s*{([\s\S]*?)}/);
+    if(metricsMatch){
+        const lines = metricsMatch[1].split('\n');
+        lines.forEach(line => {
+            const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
+            if(m) metrics[m[1].trim()] = parseInt(m[2]);
+        });
+    }
+
+    // 組合 bits（順序 RI / Padding / PMI WB X1 / PMI WB X2 / WB CQI）
+    const bits = [];
+    if(bitWidth['RI']) bits.push(metrics['RI'].toString(2).padStart(bitWidth['RI'],'0'));
+    if(bitWidth['Zero Padding']) bits.push('0'.repeat(bitWidth['Zero Padding']));
+    if(bitWidth['PMI WB X1']) bits.push(metrics['PMI WB X1'].toString(2).padStart(bitWidth['PMI WB X1'],'0'));
+    if(bitWidth['PMI WB X2']) bits.push(metrics['PMI WB X2'].toString(2).padStart(bitWidth['PMI WB X2'],'0'));
+    if(bitWidth['WB CQI']) bits.push(metrics['WB CQI'].toString(2).padStart(bitWidth['WB CQI'],'0'));
+
+    const bitString = bits.join('');
+    
+    // 將 bits 轉成 byte array
+    const byteArray = [];
+    for(let i=0;i<bitString.length;i+=8){
+        let byte = bitString.substr(i,8).padEnd(8,'0'); // 不足補0
+        let hex = '0x' + parseInt(byte,2).toString(16).padStart(2,'0');
+        let dec = parseInt(byte,2);
+        byteArray.push({hex, dec});
+    }
+
+    // 輸出格式
+    let outputText = "NR_INFO\t[RX_CSI.ind]\nL1PA Message: RX_CSI.ind\n    CSI PDU #0:\n";
+    byteArray.forEach((b,i)=>{
+        outputText += `        Byte ${i}: ${b.hex}  (DEC=${b.dec})\n`;
+    });
+
+    document.getElementById('output').textContent = outputText;
+}
+</script>
+</body>
+</html>

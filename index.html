@@ -1,76 +1,357 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<title>QXDM_CSI_to_Wireshark_FAPI_Converter</title>
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-textarea { width: 100%; height: 300px; margin-bottom: 10px; font-family: monospace; }
-button { padding: 10px 20px; font-size: 16px; }
-pre { background: #fff; padding: 10px; border: 1px solid #ccc; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QXDM_CSI_to_Wireshark_FAPI_Converter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .input-section, .output-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eaeaea;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #4a6491;
+            box-shadow: 0 0 5px rgba(74, 100, 145, 0.3);
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 25px;
+            background-color: #4a6491;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background-color: #3a5481;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .output-section textarea {
+            background-color: #f0f4f8;
+        }
+        
+        .info-box {
+            background-color: #e8f4fc;
+            border-left: 4px solid #4a6491;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .info-box h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            padding-left: 20px;
+        }
+        
+        .info-box li {
+            margin-bottom: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .input-section, .output-section {
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-<h1>QXDM_CSI_to_Wireshark_FAPI_Converter</h1>
-<p style="margin: 0;">Author: Dustin_Chen, email: <a href="mailto:Dustin_Chen@compal.com" style="line-height: 1;">Dustin_Chen@compal.com</a> or <a href="mailto:chuhpsdustin@gmail.com" style="line-height: 1;">chuhpsdustin@gmail.com</a></p>	
-<br>
-<textarea id="inputText" placeholder="Paste QXDM NR5G MAC CSF Report here..."></textarea>
-<button onclick="convertToWireshark()">Convert</button>
-<pre id="output"></pre>
-
-<script>
-function convertToWireshark() {
-    const text = document.getElementById('inputText').value;
-
-    // 解析 Bit Width
-    const bitWidth = {};
-    const bitWidthMatch = text.match(/Bit Width\s*{([\s\S]*?)}/);
-    if(bitWidthMatch){
-        const lines = bitWidthMatch[1].split('\n');
-        lines.forEach(line => {
-            const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
-            if(m) bitWidth[m[1].trim()] = parseInt(m[2]);
-        });
-    }
-
-    // 解析 Metrics
-    const metrics = {};
-    const metricsMatch = text.match(/Metrics\s*{([\s\S]*?)}/);
-    if(metricsMatch){
-        const lines = metricsMatch[1].split('\n');
-        lines.forEach(line => {
-            const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
-            if(m) metrics[m[1].trim()] = parseInt(m[2]);
-        });
-    }
-
-    // 組合 bits（順序 RI / Padding / PMI WB X1 / PMI WB X2 / WB CQI）
-    const bits = [];
-    if(bitWidth['RI']) bits.push(metrics['RI'].toString(2).padStart(bitWidth['RI'],'0'));
-    if(bitWidth['Zero Padding']) bits.push('0'.repeat(bitWidth['Zero Padding']));
-    if(bitWidth['PMI WB X1']) bits.push(metrics['PMI WB X1'].toString(2).padStart(bitWidth['PMI WB X1'],'0'));
-    if(bitWidth['PMI WB X2']) bits.push(metrics['PMI WB X2'].toString(2).padStart(bitWidth['PMI WB X2'],'0'));
-    if(bitWidth['WB CQI']) bits.push(metrics['WB CQI'].toString(2).padStart(bitWidth['WB CQI'],'0'));
-
-    const bitString = bits.join('');
-    
-    // 將 bits 轉成 byte array
-    const byteArray = [];
-    for(let i=0;i<bitString.length;i+=8){
-        let byte = bitString.substr(i,8).padEnd(8,'0'); // 不足補0
-        let hex = '0x' + parseInt(byte,2).toString(16).padStart(2,'0');
-        let dec = parseInt(byte,2);
-        byteArray.push({hex, dec});
-    }
-
-    // 輸出格式
-    let outputText = "NR_INFO\t[RX_CSI.ind]\nL1PA Message: RX_CSI.ind\n    CSI PDU #0:\n";
-    byteArray.forEach((b,i)=>{
-        outputText += `        Byte ${i}: ${b.hex}  (DEC=${b.dec})\n`;
-    });
-
-    document.getElementById('output').textContent = outputText;
+    <div class="container">
+        <header>
+            <h1>QXDM_CSI_to_Wireshark_FAPI_Converter</h1>
+<p style="margin: 0; color: white;">【Author】: Dustin_Chen, 【Email】: <a href="mailto:Dustin_Chen@compal.com" style="color: inherit; line-height: 1;">Dustin_Chen@compal.com</a> or <a href="mailto:chuhpsdustin@gmail.com" style="color: inherit; line-height: 1;">chuhpsdustin@gmail.com</a></p>            <p class="description">自動將 QXDM NR5G MAC CSF Report 轉換為 Wireshark 封包格式</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2 class="section-title">輸入 QXDM 日誌</h2>
+                <textarea id="inputText" placeholder="請貼上 QXDM 日誌內容...">23:59:21.907830	[0xB8A7]	NR5G MAC CSF Report
+MacVersion {
+   Major.Minor = 2
+   1
 }
-</script>
+Version 131073 {
+   Log Fields Change BMask = 0x0000
+   Num Records = 1
+   Records[0] {
+      Timestamp {
+         Slot = 14
+         Numerology = 30kHz
+         Frame = 175
+      }
+      Num CSF Reports = 1
+      Reports[0] {
+         Carrier ID = 0
+         Resource Carrier ID = 0
+         Report ID = 0
+         Report Type =   PERIODIC
+         Report Quantity Bitmask = CRI | RI | PMI | CQI
+         Late CSF = 0
+         Faked CSF = 0
+         Num CSI P1 Bits = 11
+         Num CSI P2 WB Bits = 0
+         Num CSI P2 SB Odd Bits = 0
+         Num CSI P2 SB Even Bits = 0
+         Report Dropped = 0
+         P1 Dropped = 0
+         P2 WB Dropped = 0
+         P2 SB Odd Report Dropped = 0
+         P2 SB Even Report Dropped = 0
+         CSI {
+            Metrics {
+               CRI = 0
+               RI = 3
+               WB CQI = 11
+               PMI WB X1 =        7
+               PMI WB X2 =        0
+               LI = 0
+               Num SB = 0
+            }
+            Bit Width {
+               CRI = 0
+               RI = 2
+               Zero Padding = 1
+               WB CQI = 4
+               PMI WB X1 =    3
+               PMI WB X2 = 1
+               LI = 0
+               PMI SB X2 = 0
+            }
+         }
+      }
+   }
+}</textarea>
+                
+                <div class="buttons">
+                    <button id="convertBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 7L10 17L5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        轉換
+                    </button>
+                    <button id="clearBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        清除
+                    </button>
+                </div>
+                
+                <div class="info-box">
+                    <h3>使用說明</h3>
+                    <ul>
+                        <li>貼上 [0xB8A7]	NR5G MAC CSF Report 日誌</li>
+                        <li>點擊"轉換"按鈕生成 Wireshark 封包格式</li>
+                        <li>遵循 3GPP 38.212 Table 6.3.1.1.2-7: Mapping order of CSI fields of one CSI report, pmi-FormatIndicator=widebandPMI and cqi-FormatIndicator=widebandCQI  規範</li>
+                        <li>支援多個 QXDM Reports 的轉換</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title">輸出 Wireshark 封包</h2>
+                <textarea id="outputText" readonly placeholder="轉換結果將顯示在這裡..."></textarea>
+            </div>
+        </div>
+        
+        <footer>
+            <p>QXDM 到 Wireshark 封包轉換器 | 遵循 3GPP 38.212 規範</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('convertBtn').addEventListener('click', convertQXDMtoWireshark);
+        document.getElementById('clearBtn').addEventListener('click', clearText);
+
+        function convertQXDMtoWireshark() {
+            const inputText = document.getElementById('inputText').value;
+            const outputText = document.getElementById('outputText');
+            
+            try {
+                // 解析輸入文本
+                const result = parseQXDM(inputText);
+                outputText.value = result;
+            } catch (error) {
+                outputText.value = `轉換錯誤: ${error.message}`;
+            }
+        }
+
+        function clearText() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputText').value = '';
+        }
+
+        function parseQXDM(text) {
+            // 提取 Reports 部分
+            const reportsMatch = text.match(/Reports\[\d+\]\s*\{([\s\S]*?)\}\s*\}/g);
+            if (!reportsMatch) {
+                throw new Error('未找到有效的 Reports 數據');
+            }
+            
+            let output = '';
+            
+            // 處理每個 Report
+            reportsMatch.forEach((report, index) => {
+                // 解析 Bit Width
+                const bitWidth = {};
+                const bitWidthMatch = report.match(/Bit Width\s*\{([\s\S]*?)\}/);
+                if (bitWidthMatch) {
+                    const lines = bitWidthMatch[1].split('\n');
+                    lines.forEach(line => {
+                        const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
+                        if (m) bitWidth[m[1].trim()] = parseInt(m[2]);
+                    });
+                }
+
+                // 解析 Metrics
+                const metrics = {};
+                const metricsMatch = report.match(/Metrics\s*\{([\s\S]*?)\}/);
+                if (metricsMatch) {
+                    const lines = metricsMatch[1].split('\n');
+                    lines.forEach(line => {
+                        const m = line.match(/(\w+(?:\s\w+)*)\s*=\s*(\d+)/);
+                        if (m) metrics[m[1].trim()] = parseInt(m[2]);
+                    });
+                }
+
+                // 組合 bits（順序 RI / Padding / PMI WB X1 / PMI WB X2 / WB CQI）
+                const bits = [];
+                if (bitWidth['RI']) bits.push(metrics['RI'].toString(2).padStart(bitWidth['RI'], '0'));
+                if (bitWidth['Zero Padding']) bits.push('0'.repeat(bitWidth['Zero Padding']));
+                if (bitWidth['PMI WB X1']) bits.push(metrics['PMI WB X1'].toString(2).padStart(bitWidth['PMI WB X1'], '0'));
+                if (bitWidth['PMI WB X2']) bits.push(metrics['PMI WB X2'].toString(2).padStart(bitWidth['PMI WB X2'], '0'));
+                if (bitWidth['WB CQI']) bits.push(metrics['WB CQI'].toString(2).padStart(bitWidth['WB CQI'], '0'));
+
+                const bitString = bits.join('');
+                
+                // 將 bits 轉成 byte array
+                const byteArray = [];
+                for (let i = 0; i < bitString.length; i += 8) {
+                    let byte = bitString.substr(i, 8).padEnd(8, '0'); // 不足補0
+                    let hex = '0x' + parseInt(byte, 2).toString(16).padStart(2, '0').toLowerCase(); // 改為小寫
+                    let dec = parseInt(byte, 2);
+                    byteArray.push({hex, dec});
+                }
+
+                // 輸出格式 - 調整縮進
+                output += "NR_INFO\t[RX_CSI.ind]\n";
+                output += "L1PA Message: RX_CSI.ind\n";
+                output += `    CSI PDU #${index}:\n`;
+                byteArray.forEach((b, i) => {
+                    output += `        Byte ${i}: ${b.hex}  (DEC=${b.dec})\n`; // 調整縮進
+                });
+                output += '\n';
+            });
+            
+            return output;
+        }
+    </script>
 </body>
 </html>
