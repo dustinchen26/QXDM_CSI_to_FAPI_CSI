@@ -1,0 +1,204 @@
+幫我些一個html，
+可以自動轉換QXDM packet變成wireshark packet
+輸入底下
+23:59:21.907830	[0xB8A7]	NR5G MAC CSF Report
+MacVersion {
+   Major.Minor = 2
+   1
+}
+Version 131073 {
+   Log Fields Change BMask = 0x0000
+   Num Records = 1
+   Records[0] {
+      Timestamp {
+         Slot = 14
+         Numerology = 30kHz
+         Frame = 175
+      }
+      Num CSF Reports = 1
+      Reports[0] {
+         Carrier ID = 0
+         Resource Carrier ID = 0
+         Report ID = 0
+         Report Type =   PERIODIC
+         Report Quantity Bitmask = CRI | RI | PMI | CQI
+         Late CSF = 0
+         Faked CSF = 0
+         Num CSI P1 Bits = 11
+         Num CSI P2 WB Bits = 0
+         Num CSI P2 SB Odd Bits = 0
+         Num CSI P2 SB Even Bits = 0
+         Report Dropped = 0
+         P1 Dropped = 0
+         P2 WB Dropped = 0
+         P2 SB Odd Report Dropped = 0
+         P2 SB Even Report Dropped = 0
+         CSI {
+            Metrics {
+               CRI = 0
+               RI = 3
+               WB CQI = 11
+               PMI WB X1 =        7
+               PMI WB X2 =        0
+               LI = 0
+               Num SB = 0
+            }
+            Bit Width {
+               CRI = 0
+               RI = 2
+               Zero Padding = 1
+               WB CQI = 4
+               PMI WB X1 =    3
+               PMI WB X2 = 1
+               LI = 0
+               PMI SB X2 = 0
+            }
+         }
+      }
+   }
+}
+
+可以自動計算輸出
+NR_INFO	[RX_CSI.ind]
+L1PA Message: RX_CSI.ind
+    CSI PDU #0:
+        Byte 0: 0xdd
+        Byte 1: 0x60
+
+計算如下
+由上面知道Num CSI P1 Bits = 11總共11個bits
+按照 3gpp spec 38.212 table 6.3.1.1.2-7 的格式：CRI/RI/LI/padding/PMI/CQI
+根據上面 Bit Width
+            Bit Width {
+               CRI = 0
+               RI = 2
+               Zero Padding = 1
+               WB CQI = 4
+               PMI WB X1 =    3
+               PMI WB X2 = 1
+               LI = 0
+               PMI SB X2 = 0
+            }
+排列這11個bit
+CRI = 0 個bit
+RI = 2 個bit
+LI = 0 個bit
+Padding = 1 個bit
+PMI WB X1 = 3 個bit
+PMI WB X2 = 1 個bit
+WB CQI = 4 個bit
+
+根據上面 Metrics 數值
+            Metrics {
+               CRI = 0
+               RI = 3
+               WB CQI = 11
+               PMI WB X1 =        7
+               PMI WB X2 =        0
+               LI = 0
+               Num SB = 0
+            }
+CRI = 0
+RI = 3
+LI = 0
+Padding = 0
+PMI WB X1 = 7
+PMI WB X2 = 0
+WB CQI = 11
+
+轉成2進位，且按照上面bits
+CRI = 0
+RI = 11
+LI = 0
+Padding = 0
+PMI WB X1 = 111
+PMI WB X2 = 0
+WB CQI = 1011
+
+串接起來，有bits個數才要串些，bit個數=0不用，
+也就是串接底下數值
+RI = 2 個bit
+Padding = 1 個bit
+PMI WB X1 = 3 個bit
+PMI WB X2 = 1 個bit
+WB CQI = 4 個bit
+變成11 0 111 0 1011總共11個bits，
+排列成wireshark格式，前面8個bit，剩下是後面，不足補0
+11011101
+01100000
+
+換成16進位
+11011101 變成 0xdd
+01100000 變成 0x60
+
+最後輸出
+NR_INFO	[RX_CSI.ind]
+L1PA Message: RX_CSI.ind
+    CSI PDU #0:
+        Byte 0: 0xdd
+        Byte 1: 0x60
+		
+請寫成程式，可以任意貼底下自動轉換
+23:59:21.907830	[0xB8A7]	NR5G MAC CSF Report
+MacVersion {
+   Major.Minor = 2
+   1
+}
+Version 131073 {
+   Log Fields Change BMask = 0x0000
+   Num Records = 1
+   Records[0] {
+      Timestamp {
+         Slot = 14
+         Numerology = 30kHz
+         Frame = 175
+      }
+      Num CSF Reports = 1
+      Reports[0] {
+         Carrier ID = 0
+         Resource Carrier ID = 0
+         Report ID = 0
+         Report Type =   PERIODIC
+         Report Quantity Bitmask = CRI | RI | PMI | CQI
+         Late CSF = 0
+         Faked CSF = 0
+         Num CSI P1 Bits = 11
+         Num CSI P2 WB Bits = 0
+         Num CSI P2 SB Odd Bits = 0
+         Num CSI P2 SB Even Bits = 0
+         Report Dropped = 0
+         P1 Dropped = 0
+         P2 WB Dropped = 0
+         P2 SB Odd Report Dropped = 0
+         P2 SB Even Report Dropped = 0
+         CSI {
+            Metrics {
+               CRI = 0
+               RI = 3
+               WB CQI = 11
+               PMI WB X1 =        7
+               PMI WB X2 =        0
+               LI = 0
+               Num SB = 0
+            }
+            Bit Width {
+               CRI = 0
+               RI = 2
+               Zero Padding = 1
+               WB CQI = 4
+               PMI WB X1 =    3
+               PMI WB X2 = 1
+               LI = 0
+               PMI SB X2 = 0
+            }
+         }
+      }
+   }
+}
+
+
+
+
+
+
+
