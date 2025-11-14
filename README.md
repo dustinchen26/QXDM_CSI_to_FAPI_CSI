@@ -61,10 +61,10 @@ Version 131073 {
    }
 }
 
-【Output_FAPI】
+【Output_Wireshark_FAPI】
 NR_INFO	[RX_CSI.ind]
 L1PA Message: RX_CSI.ind
     CSI PDU #0:
-        Byte 0: 0xdd
-        Byte 1: 0x60
+        Byte 0: 0xdd  (DEC=221)
+        Byte 1: 0x60  (DEC=96)
 ```
